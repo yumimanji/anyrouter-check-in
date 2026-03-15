@@ -138,27 +138,58 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 				return None
 
 
+# def get_user_info(client, headers, user_info_url: str):
+# 	"""获取用户信息"""
+# 	try:
+# 		response = client.get(user_info_url, headers=headers, timeout=30)
+
+# 		if response.status_code == 200:
+# 			data = response.json()
+# 			if data.get('success'):
+# 				user_data = data.get('data', {})
+# 				quota = round(user_data.get('quota', 0) / 500000, 2)
+# 				used_quota = round(user_data.get('used_quota', 0) / 500000, 2)
+# 				return {
+# 					'success': True,
+# 					'quota': quota,
+# 					'used_quota': used_quota,
+# 					'display': f':money: Current balance: ${quota}, Used: ${used_quota}',
+# 				}
+# 		return {'success': False, 'error': f'Failed to get user info: HTTP {response.status_code}'}
+# 	except Exception as e:
+# 		return {'success': False, 'error': f'Failed to get user info: {str(e)[:50]}...'}
 def get_user_info(client, headers, user_info_url: str):
 	"""获取用户信息"""
 	try:
-		response = client.get(user_info_url, headers=headers, timeout=30)
+		response = client.get(user_info_url, headers=headers, timeout=30, follow_redirects=True)
 
-		if response.status_code == 200:
-			data = response.json()
-			if data.get('success'):
-				user_data = data.get('data', {})
-				quota = round(user_data.get('quota', 0) / 500000, 2)
-				used_quota = round(user_data.get('used_quota', 0) / 500000, 2)
-				return {
-					'success': True,
-					'quota': quota,
-					'used_quota': used_quota,
-					'display': f':money: Current balance: ${quota}, Used: ${used_quota}',
-				}
-		return {'success': False, 'error': f'Failed to get user info: HTTP {response.status_code}'}
+		ct = response.headers.get('content-type', '')
+		print(f'[DEBUG] user_info status={response.status_code} content-type={ct}')
+
+		# 先处理非 200，避免误导成 JSON 解析错误
+		if response.status_code != 200:
+			preview = (response.text or '')[:200].replace('\n', '\\n')
+			return {'success': False, 'error': f'Failed to get user info: HTTP {response.status_code}, preview={preview}'}
+
+		# 200 也不一定是 JSON（可能是 WAF HTML）
+		if 'application/json' not in ct.lower():
+			preview = (response.text or '')[:200].replace('\n', '\\n')
+			return {'success': False, 'error': f'User info not JSON, content-type={ct}, preview={preview}'}
+
+		data = response.json()
+		if data.get('success'):
+			user_data = data.get('data', {})
+			quota = round(user_data.get('quota', 0) / 500000, 2)
+			used_quota = round(user_data.get('used_quota', 0) / 500000, 2)
+			return {
+				'success': True,
+				'quota': quota,
+				'used_quota': used_quota,
+				'display': f':money: Current balance: ${quota}, Used: ${used_quota}',
+			}
+		return {'success': False, 'error': f'User info JSON but success=false, keys={list(data.keys())}'}
 	except Exception as e:
-		return {'success': False, 'error': f'Failed to get user info: {str(e)[:50]}...'}
-
+		return {'success': False, 'error': f'Failed to get user info: {str(e)[:80]}...'}
 
 async def prepare_cookies(account_name: str, provider_config, user_cookies: dict) -> dict | None:
 	"""准备请求所需的 cookies（可能包含 WAF cookies）"""
