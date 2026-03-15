@@ -61,9 +61,11 @@ class ProviderConfig:
 		"""判断是否需要获取 WAF cookies"""
 		return self.bypass_method == 'waf_cookies'
 
+	# def needs_manual_check_in(self) -> bool:
+	# 	"""判断是否需要手动调用签到接口"""
+	# 	return self.bypass_method == 'waf_cookies'
 	def needs_manual_check_in(self) -> bool:
-		"""判断是否需要手动调用签到接口"""
-		return self.bypass_method == 'waf_cookies'
+	    return self.bypass_method == 'waf_cookies' and bool(self.sign_in_path)
 
 
 @dataclass
