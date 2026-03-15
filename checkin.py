@@ -217,6 +217,14 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 	print(f'\n[PROCESSING] Starting to process {account_name}')
 
 	provider_config = app_config.get_provider(account.provider)
+	print(f'[INFO] {account_name}: Using provider "{account.provider}" ({provider_config.domain})')
+	
+	print(f'[DEBUG] {account_name}: login_url={provider_config.domain}{provider_config.login_path}')
+	print(f'[DEBUG] {account_name}: user_info_url={provider_config.domain}{provider_config.user_info_path}')
+	print(f'[DEBUG] {account_name}: sign_in_path={provider_config.sign_in_path}')
+	if provider_config.sign_in_path:
+		print(f'[DEBUG] {account_name}: sign_in_url={provider_config.domain}{provider_config.sign_in_path}')
+	
 	if not provider_config:
 		print(f'[FAILED] {account_name}: Provider "{account.provider}" not found in configuration')
 		return False, None
