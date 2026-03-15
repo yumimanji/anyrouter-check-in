@@ -64,7 +64,12 @@ def parse_cookies(cookies_data):
 		return cookies_dict
 	return {}
 
-
+def env_bool(name: str, default: bool = False) -> bool:
+	val = os.getenv(name)
+	if val is None:
+		return default
+	return val.strip().lower() in ('1', 'true', 'yes', 'y', 'on')
+	
 async def get_waf_cookies_with_playwright(account_name: str, login_url: str, required_cookies: list[str]):
 	"""使用 Playwright 获取 WAF cookies（隐私模式）"""
 	print(f'[PROCESSING] {account_name}: Starting browser to get WAF cookies...')
@@ -75,8 +80,12 @@ async def get_waf_cookies_with_playwright(account_name: str, login_url: str, req
 		with tempfile.TemporaryDirectory() as temp_dir:
 			context = await p.chromium.launch_persistent_context(
 				user_data_dir=temp_dir,
-				headless=False,
-				user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+				# headless=False,
+				headless = env_bool('PLAYWRIGHT_HEADLESS', default=True),
+				# user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+				user_agent=os.getenv(
+				'PLAYWRIGHT_USER_AGENT',
+				'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',),
 				viewport={'width': 1920, 'height': 1080},
 				args=[
 					'--disable-blink-features=AutomationControlled',
