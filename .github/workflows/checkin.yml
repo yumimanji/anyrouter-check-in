@@ -3,7 +3,10 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-
+  
+permissions:
+  contents: write
+  
 jobs:
   checkin:
     runs-on: windows-2025
